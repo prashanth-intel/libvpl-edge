@@ -67,25 +67,25 @@ int main(int argc, char *argv[]) {
     }
 
     uint32_t codecFormat = 0;
-    std::string   outputFile;
+    const char *outputFile  = NULL;
     switch (cliParams.codecFormat) {
         case AVC_FORMAT:
             codecFormat = MFX_CODEC_AVC;
-	    outputFile  = AVC_OUTPUT_FILE;
+            outputFile  = AVC_OUTPUT_FILE;
             break;
         case VP9_FORMAT:
             codecFormat = MFX_CODEC_VP9;
-	    outputFile  = VP9_OUTPUT_FILE;
+            outputFile  = VP9_OUTPUT_FILE;
             break;
         default:
             codecFormat = MFX_CODEC_HEVC;
-	    outputFile  = HEVC_OUTPUT_FILE;
+            outputFile  = HEVC_OUTPUT_FILE;
     }
 
     source = fopen(cliParams.infileName, "rb");
     VERIFY(source, "Could not open input file");
 
-    sink = fopen(outputFile.c_str(), "wb");
+    sink = fopen(outputFile, "wb");
     VERIFY(sink, "Could not create output file");
 
     // Initialize session
@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
     bitstream.MaxLength = BITSTREAM_BUFFER_SIZE;
     bitstream.Data      = (mfxU8 *)calloc(bitstream.MaxLength, sizeof(mfxU8));
 
-    printf("Encoding %s(%dx%d) -> %s\n", cliParams.infileName, cliParams.srcWidth, cliParams.srcHeight, outputFile.c_str());
+    printf("Encoding %s(%dx%d) -> %s\n", cliParams.infileName, cliParams.srcWidth, cliParams.srcHeight, outputFile);
 
     printf("Input colorspace: ");
     switch (encodeParams.mfx.FrameInfo.FourCC) {
