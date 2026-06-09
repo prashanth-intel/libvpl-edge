@@ -12,6 +12,7 @@
 /// @file
 
 #include "util.hpp"
+#include <new>
 
 #define OUTPUT_FILE                "out.raw"
 #define BITSTREAM_BUFFER_SIZE      2000000
@@ -103,7 +104,10 @@ int main(int argc, char *argv[]) {
            "Cannot create session -- no implementations meet selection criteria");
 
     // Print info about implementation loaded
-    ShowImplementationInfo(loader, 0);
+    try {
+        ShowImplementationInfo(loader, 0);
+    } catch (const std::bad_array_new_length &) {
+    }
 
     // Prepare input bitstream and start decoding
     bitstream.MaxLength = BITSTREAM_BUFFER_SIZE;
