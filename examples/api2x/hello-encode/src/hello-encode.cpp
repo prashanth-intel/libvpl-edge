@@ -11,6 +11,7 @@
 /// @file
 
 #include <string>
+#include <stdexcept>
 #include "util.hpp"
 
 #define TARGETKBPS                 4000
@@ -105,10 +106,14 @@ int main(int argc, char *argv[]) {
     VERIFY(NULL != cfg[1], "MFXCreateConfig failed")
     cfgVal[1].Type     = MFX_VARIANT_TYPE_U32;
     cfgVal[1].Data.U32 = codecFormat;
-    sts                = MFXSetConfigFilterProperty(
-        cfg[1],
-        (mfxU8 *)"mfxImplDescription.mfxEncoderDescription.encoder.CodecID",
-        cfgVal[1]);
+    try {
+        sts = MFXSetConfigFilterProperty(
+            cfg[1],
+            (mfxU8 *)"mfxImplDescription.mfxEncoderDescription.encoder.CodecID",
+            cfgVal[1]);
+    } catch (const std::length_error &) {
+        sts = MFX_ERR_UNKNOWN;
+    }
     VERIFY(MFX_ERR_NONE == sts, "MFXSetConfigFilterProperty failed for encoder CodecID");
 
     // Implementation used must provide API version 2.2 or newer
