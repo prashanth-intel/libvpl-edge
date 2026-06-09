@@ -11,6 +11,7 @@
 /// @file
 
 #include "util.hpp"
+#include <stdexcept>
 
 #define OUTPUT_WIDTH               640
 #define OUTPUT_HEIGHT              480
@@ -101,9 +102,13 @@ int main(int argc, char *argv[]) {
     VERIFY(NULL != cfg[2], "MFXCreateConfig failed")
     cfgVal[2].Type     = MFX_VARIANT_TYPE_U32;
     cfgVal[2].Data.U32 = VPLVERSION(MAJOR_API_VERSION_REQUIRED, MINOR_API_VERSION_REQUIRED);
-    sts                = MFXSetConfigFilterProperty(cfg[2],
-                                     (mfxU8 *)"mfxImplDescription.ApiVersion.Version",
-                                     cfgVal[2]);
+    try {
+        sts = MFXSetConfigFilterProperty(cfg[2],
+                                         (mfxU8 *)"mfxImplDescription.ApiVersion.Version",
+                                         cfgVal[2]);
+    } catch (const std::length_error &) {
+        sts = MFX_ERR_UNKNOWN;
+    }
     VERIFY(MFX_ERR_NONE == sts, "MFXSetConfigFilterProperty failed for API version");
 
     sts = MFXCreateSession(loader, 0, &session);
