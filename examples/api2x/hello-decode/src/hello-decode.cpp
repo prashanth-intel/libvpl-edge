@@ -99,7 +99,11 @@ int main(int argc, char *argv[]) {
                                      cfgVal[2]);
     VERIFY(MFX_ERR_NONE == sts, "MFXSetConfigFilterProperty failed for API version");
 
-    sts = MFXCreateSession(loader, 0, &session);
+    try {
+        sts = MFXCreateSession(loader, 0, &session);
+    } catch (const std::bad_array_new_length &) {
+        sts = MFX_ERR_MEMORY_ALLOC;
+    }
     VERIFY(MFX_ERR_NONE == sts,
            "Cannot create session -- no implementations meet selection criteria");
 
