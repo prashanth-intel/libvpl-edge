@@ -131,7 +131,10 @@ int main(int argc, char *argv[]) {
            "Cannot create session -- no implementations meet selection criteria");
 
     // Print info about implementation loaded
-    ShowImplementationInfo(loader, 0);
+    try {
+        ShowImplementationInfo(loader, 0);
+    } catch (const std::length_error &) {
+    }
 
     // Initialize encode parameters
     encodeParams.mfx.CodecId                 = codecFormat;
