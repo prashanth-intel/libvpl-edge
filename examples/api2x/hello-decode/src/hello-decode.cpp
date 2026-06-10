@@ -13,6 +13,7 @@
 
 #include "util.hpp"
 #include <new>
+#include <stdexcept>
 
 #define OUTPUT_FILE                "out.raw"
 #define BITSTREAM_BUFFER_SIZE      2000000
@@ -67,7 +68,11 @@ int main(int argc, char *argv[]) {
     VERIFY(sink, "Could not create output file");
 
     // Initialize session
-    loader = MFXLoad();
+    try {
+        loader = MFXLoad();
+    } catch (const std::length_error &) {
+        loader = NULL;
+    }
     VERIFY(NULL != loader, "MFXLoad failed -- is implementation in path?");
 
     // Implementation used must be the type requested from command line
@@ -75,7 +80,13 @@ int main(int argc, char *argv[]) {
     VERIFY(NULL != cfg[0], "MFXCreateConfig failed")
     cfgVal[0].Type     = MFX_VARIANT_TYPE_U32;
     cfgVal[0].Data.U32 = MFX_IMPL_TYPE_HARDWARE;
-    sts = MFXSetConfigFilterProperty(cfg[0], (mfxU8 *)"mfxImplDescription.Impl", cfgVal[0]);
+    try {
+        sts = MFXSetConfigFilterProperty(cfg[0], (mfxU8 *)"mfxImplDescription.Impl", cfgVal[0]);
+    } catch (const std::length_error &) {
+        sts = MFX_ERR_UNKNOWN;
+    } catch (const std::bad_array_new_length &) {
+        sts = MFX_ERR_MEMORY_ALLOC;
+    }
     VERIFY(MFX_ERR_NONE == sts, "MFXSetConfigFilterProperty failed for Impl");
 
     // Implementation must provide an HEVC decoder
@@ -83,10 +94,16 @@ int main(int argc, char *argv[]) {
     VERIFY(NULL != cfg[1], "MFXCreateConfig failed")
     cfgVal[1].Type     = MFX_VARIANT_TYPE_U32;
     cfgVal[1].Data.U32 = MFX_CODEC_HEVC;
-    sts                = MFXSetConfigFilterProperty(
-        cfg[1],
-        (mfxU8 *)"mfxImplDescription.mfxDecoderDescription.decoder.CodecID",
-        cfgVal[1]);
+    try {
+        sts = MFXSetConfigFilterProperty(
+            cfg[1],
+            (mfxU8 *)"mfxImplDescription.mfxDecoderDescription.decoder.CodecID",
+            cfgVal[1]);
+    } catch (const std::length_error &) {
+        sts = MFX_ERR_UNKNOWN;
+    } catch (const std::bad_array_new_length &) {
+        sts = MFX_ERR_MEMORY_ALLOC;
+    }
     VERIFY(MFX_ERR_NONE == sts, "MFXSetConfigFilterProperty failed for decoder CodecID");
 
     // Implementation used must provide API version 2.2 or newer
@@ -94,13 +111,21 @@ int main(int argc, char *argv[]) {
     VERIFY(NULL != cfg[2], "MFXCreateConfig failed")
     cfgVal[2].Type     = MFX_VARIANT_TYPE_U32;
     cfgVal[2].Data.U32 = VPLVERSION(MAJOR_API_VERSION_REQUIRED, MINOR_API_VERSION_REQUIRED);
-    sts                = MFXSetConfigFilterProperty(cfg[2],
-                                     (mfxU8 *)"mfxImplDescription.ApiVersion.Version",
-                                     cfgVal[2]);
+    try {
+        sts = MFXSetConfigFilterProperty(cfg[2],
+                                         (mfxU8 *)"mfxImplDescription.ApiVersion.Version",
+                                         cfgVal[2]);
+    } catch (const std::length_error &) {
+        sts = MFX_ERR_UNKNOWN;
+    } catch (const std::bad_array_new_length &) {
+        sts = MFX_ERR_MEMORY_ALLOC;
+    }
     VERIFY(MFX_ERR_NONE == sts, "MFXSetConfigFilterProperty failed for API version");
 
     try {
         sts = MFXCreateSession(loader, 0, &session);
+    } catch (const std::length_error &) {
+        sts = MFX_ERR_UNKNOWN;
     } catch (const std::bad_array_new_length &) {
         sts = MFX_ERR_MEMORY_ALLOC;
     }
@@ -110,6 +135,7 @@ int main(int argc, char *argv[]) {
     // Print info about implementation loaded
     try {
         ShowImplementationInfo(loader, 0);
+    } catch (const std::length_error &) {
     } catch (const std::bad_array_new_length &) {
     }
 
@@ -243,7 +269,10 @@ end:
         free(bitstream.Data);
 
     if (loader)
-        MFXUnload(loader);
+        try {
+            MFXUnload(loader);
+        } catch (const std::length_error &) {
+        }
 
     if (isFailed) {
         return -1;

@@ -12,6 +12,7 @@
 
 #include "util.hpp"
 #include <stdexcept>
+#include <new>
 
 #define OUTPUT_WIDTH               640
 #define OUTPUT_HEIGHT              480
@@ -75,7 +76,11 @@ int main(int argc, char *argv[]) {
     VERIFY(sink, "Could not create output file");
 
     // Initialize session
-    loader = MFXLoad();
+    try {
+        loader = MFXLoad();
+    } catch (const std::length_error &) {
+        loader = NULL;
+    }
     VERIFY(NULL != loader, "MFXLoad failed -- is implementation in path?");
 
     // Implementation used must be the type requested from command line
@@ -83,7 +88,13 @@ int main(int argc, char *argv[]) {
     VERIFY(NULL != cfg[0], "MFXCreateConfig failed")
     cfgVal[0].Type     = MFX_VARIANT_TYPE_U32;
     cfgVal[0].Data.U32 = MFX_IMPL_TYPE_HARDWARE;
-    sts = MFXSetConfigFilterProperty(cfg[0], (mfxU8 *)"mfxImplDescription.Impl", cfgVal[0]);
+    try {
+        sts = MFXSetConfigFilterProperty(cfg[0], (mfxU8 *)"mfxImplDescription.Impl", cfgVal[0]);
+    } catch (const std::length_error &) {
+        sts = MFX_ERR_UNKNOWN;
+    } catch (const std::bad_array_new_length &) {
+        sts = MFX_ERR_MEMORY_ALLOC;
+    }
     VERIFY(MFX_ERR_NONE == sts, "MFXSetConfigFilterProperty failed for Impl");
 
     // Implementation must provide VPP scaling
@@ -91,10 +102,16 @@ int main(int argc, char *argv[]) {
     VERIFY(NULL != cfg[1], "MFXCreateConfig failed")
     cfgVal[1].Type     = MFX_VARIANT_TYPE_U32;
     cfgVal[1].Data.U32 = MFX_EXTBUFF_VPP_SCALING;
-    sts                = MFXSetConfigFilterProperty(
-        cfg[1],
-        (mfxU8 *)"mfxImplDescription.mfxVPPDescription.filter.FilterFourCC",
-        cfgVal[1]);
+    try {
+        sts = MFXSetConfigFilterProperty(
+            cfg[1],
+            (mfxU8 *)"mfxImplDescription.mfxVPPDescription.filter.FilterFourCC",
+            cfgVal[1]);
+    } catch (const std::length_error &) {
+        sts = MFX_ERR_UNKNOWN;
+    } catch (const std::bad_array_new_length &) {
+        sts = MFX_ERR_MEMORY_ALLOC;
+    }
     VERIFY(MFX_ERR_NONE == sts, "MFXSetConfigFilterProperty failed");
 
     // Implementation used must provide API version 2.2 or newer
@@ -108,15 +125,27 @@ int main(int argc, char *argv[]) {
                                          cfgVal[2]);
     } catch (const std::length_error &) {
         sts = MFX_ERR_UNKNOWN;
+    } catch (const std::bad_array_new_length &) {
+        sts = MFX_ERR_MEMORY_ALLOC;
     }
     VERIFY(MFX_ERR_NONE == sts, "MFXSetConfigFilterProperty failed for API version");
 
-    sts = MFXCreateSession(loader, 0, &session);
+    try {
+        sts = MFXCreateSession(loader, 0, &session);
+    } catch (const std::length_error &) {
+        sts = MFX_ERR_UNKNOWN;
+    } catch (const std::bad_array_new_length &) {
+        sts = MFX_ERR_MEMORY_ALLOC;
+    }
     VERIFY(MFX_ERR_NONE == sts,
            "Cannot create session -- no implementations meet selection criteria");
 
     // Print info about implementation loaded
-    ShowImplementationInfo(loader, 0);
+    try {
+        ShowImplementationInfo(loader, 0);
+    } catch (const std::length_error &) {
+    } catch (const std::bad_array_new_length &) {
+    }
 
     // Initialize VPP parameters
     PrepareFrameInfo(&VPPParams.vpp.In, MFX_FOURCC_NV12, cliParams.srcWidth, cliParams.srcHeight);
@@ -216,7 +245,10 @@ end:
     MFXClose(session);
 
     if (loader)
-        MFXUnload(loader);
+        try {
+            MFXUnload(loader);
+        } catch (const std::length_error &) {
+        }
 
     if (isFailed) {
         return -1;
